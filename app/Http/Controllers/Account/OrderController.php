@@ -1,0 +1,37 @@
+<?php
+
+namespace App\Http\Controllers\Account;
+
+use App\Http\Controllers\Controller;
+use App\Models\Order;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Inertia\Response;
+
+class OrderController extends Controller
+{
+    public function index(Request $request): Response
+    {
+        $orders = $request->user()
+            ->orders()
+            ->withCount('items')
+            ->latest()
+            ->paginate(10);
+
+        return Inertia::render('store/Account/Orders/Index', [
+            'orders' => $orders,
+        ]);
+    }
+
+    public function show(Request $request, Order $order): Response
+    {
+        abort_unless($order->user_id === $request->user()->id, 403);
+
+        $order->load(['items', 'statusHistories.author:id,name', 'shippingZone']);
+
+        return Inertia::render('store/Orders/Show', [
+            'order' => $order,
+            'transfer' => config('store.transfer'),
+        ]);
+    }
+}
